@@ -19,6 +19,7 @@
       <nav class="tabs">
         <button class="tab active" data-tab="labels">Štítky</button>
         <button class="tab" data-tab="inventory">Inventura</button>
+        <button class="tab" data-tab="help">Návod</button>
       </nav>
     </header>
 
@@ -115,6 +116,7 @@
         <div class="card" id="inv-start">
           <h2>Nová inventura</h2>
           <p class="muted">Nahrajte export majetku (.xlsx) pro pracoviště, které budete kontrolovat. Soubor se zpracuje jen v tomto zařízení.</p>
+          <p class="small">Děláte inventuru poprvé? <button type="button" class="link" data-goto="help">Přečtěte si návod</button>.</p>
           <label class="file-drop">
             <input type="file" id="inv-file" accept=".xlsx,.xls" />
             <span id="inv-file-label">Vybrat soubor</span>
@@ -150,6 +152,7 @@
             <div id="scan-msg" class="scan-msg muted">Spusťte kameru a namiřte ji na QR kód štítku.</div>
             <div class="actions row">
               <button type="button" class="primary" id="cam-toggle">Spustit kameru</button>
+              <button type="button" class="secondary" id="cam-torch" aria-pressed="false" hidden>🔦 Svítilna</button>
             </div>
             <form class="manual row" id="manual-form" autocomplete="off">
               <label class="grow">Ruční zadání (poškozený štítek)
@@ -186,7 +189,138 @@
           </div>
         </div>
       </section>
+      <!-- ============ NÁVOD ============ -->
+      <section id="tab-help" class="tab-panel help" hidden>
+        <div class="card">
+          <div class="help-head">
+            <h2>Návod</h2>
+            <button type="button" class="secondary no-print" id="help-print">🖨 Vytisknout návod</button>
+          </div>
+          <p>Aplikace slouží ke dvěma věcem:</p>
+          <ul>
+            <li><strong>Inventura</strong> – v telefonu naskenujete štítky na majetku a aplikace sama odškrtá, co je na místě a co chybí.</li>
+            <li><strong>Štítky</strong> – na počítači vytisknete štítky s QR kódem, které se nalepí na majetek.</li>
+          </ul>
+          <p>Adresa aplikace: <strong>inventura-majetku.github.io</strong></p>
+        </div>
+
+        <div class="card">
+          <h2>📱 Inventura v telefonu</h2>
+          <p class="muted">Budete potřebovat: telefon s fotoaparátem a soubor se seznamem majetku vašeho pracoviště (Excel, .xlsx). Soubor vám pošle správce majetku.</p>
+
+          <ol class="steps">
+            <li>
+              <h3>Otevřete aplikaci</h3>
+              <p>V telefonu otevřete prohlížeč (Chrome, Safari) a napište adresu <strong>inventura-majetku.github.io</strong>.</p>
+              <p class="tip">Tip: aplikaci si můžete dát na plochu jako ikonu.<br />
+                <strong>Android (Chrome):</strong> vpravo nahoře ⋮ → <em>Přidat na plochu</em> nebo <em>Instalovat aplikaci</em>.<br />
+                <strong>iPhone (Safari):</strong> dole tlačítko Sdílet (čtvereček se šipkou) → <em>Přidat na plochu</em>.</p>
+            </li>
+            <li>
+              <h3>Nahrajte seznam majetku</h3>
+              <p>Klepněte na záložku <strong>Inventura</strong> → <strong>Vybrat soubor</strong> a vyberte soubor se seznamem. Soubor, který vám přišel e-mailem, si nejdřív v e-mailu stáhněte – pak ho najdete ve složce <em>Stažené soubory</em>.</p>
+              <p>Aplikace ukáže název pracoviště a kolik položek máte najít.</p>
+            </li>
+            <li>
+              <h3>Spusťte kameru</h3>
+              <p>Klepněte na <strong>Spustit kameru</strong>. Telefon se poprvé zeptá, jestli může aplikace používat fotoaparát – klepněte na <strong>Povolit</strong>.</p>
+            </li>
+            <li>
+              <h3>Skenujte štítky</h3>
+              <p>Namiřte telefon na štítek tak, aby byl <strong>celý černobílý čtvereček (QR kód)</strong> vidět na obrazovce, zhruba ze vzdálenosti 10–20 cm. <strong>Nic nemačkejte</strong> – kód se načte sám.</p>
+              <table class="signals">
+                <tr><td><span class="sig ok"></span></td><td><strong>Zelený rámeček a pípnutí</strong> – v pořádku, věc je odškrtnutá.</td></tr>
+                <tr><td><span class="sig warn"></span></td><td><strong>Oranžový rámeček a dvojité pípnutí</strong> – věc není ve vašem seznamu (patří na jiné pracoviště). Zapíše se do „Mimo seznam“.</td></tr>
+                <tr><td><span class="sig info"></span></td><td><strong>„Už naskenováno“</strong> – tuto věc už máte, nic se neděje.</td></tr>
+              </table>
+              <p class="tip">Když to nejde přečíst: telefon trochu oddalte nebo přibližte, otřete štítek, natočte telefon trochu šikmo (aby se na štítku neodráželo světlo). V tmavém místě zapněte <strong>🔦 Svítilnu</strong>.</p>
+              <p>Nahoře vidíte, kolik věcí už máte (např. <strong>12 / 29</strong>).</p>
+            </li>
+            <li>
+              <h3>Štítek chybí nebo je poškozený</h3>
+              <p>Najděte věc v seznamu <strong>Chybí</strong> a klepněte na <strong>Nalezeno ručně</strong>. Nebo napište číslo ze štítku do pole <strong>Ruční zadání</strong>.</p>
+              <p>Poškozený štítek pak označte: v seznamu <strong>Nalezeno</strong> klepněte u věci na <strong>Poznámka</strong> → <em>Poškozený štítek – vyměnit</em>.</p>
+            </li>
+            <li>
+              <h3>Co nemůžete najít</h3>
+              <p>Seznam <strong>Chybí</strong> ukazuje věci, které jste ještě nenašli. Když víte, proč věc chybí, klepněte na <strong>Poznámka</strong> a vyberte důvod (na opravě, zapůjčeno, přesunuto…) nebo napište vlastní text.</p>
+            </li>
+            <li>
+              <h3>Odešlete výsledek</h3>
+              <p>Až projdete celé pracoviště, sjeďte dolů na <strong>Dokončení</strong>:</p>
+              <ul>
+                <li><strong>Sdílet PDF</strong> → vyberte WhatsApp nebo e-mail → pošlete správci majetku. PDF je přehledný protokol, dá se i vytisknout a podepsat.</li>
+                <li><strong>Uložit Excel</strong> → soubor se uloží do <em>Stažených souborů</em>; pošlete ho jako přílohu e-mailu. Excel slouží ke zpracování.</li>
+              </ul>
+            </li>
+            <li>
+              <h3>Ukončete inventuru</h3>
+              <p>Teprve <strong>po odeslání výsledku</strong> klepněte na <strong>Ukončit a začít novou inventuru</strong>. Tím se inventura v telefonu smaže.</p>
+            </li>
+          </ol>
+
+          <h3>Dobré vědět</h3>
+          <ul>
+            <li><strong>Práci můžete přerušit.</strong> Inventura se průběžně ukládá. Aplikaci můžete zavřít a později pokračovat – na stejném telefonu a ve stejném prohlížeči.</li>
+            <li><strong>Funguje i bez signálu</strong> (stačí aplikaci jednou otevřít s internetem). Odeslat výsledek ale půjde až se signálem.</li>
+            <li><strong>„Je k dispozici nová verze“</strong> – klepněte na <em>Aktualizovat</em>. Rozpracovaná inventura zůstane.</li>
+            <li><strong>Kamera nejde spustit?</strong> Povolte fotoaparát:
+              Android – klepněte na ikonu vlevo od adresy → <em>Oprávnění</em> → <em>Kamera</em> → Povolit.
+              iPhone – <em>Nastavení</em> → <em>Safari</em> → <em>Fotoaparát</em> → Povolit. Pak stránku obnovte.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2>🖨 Tisk štítků (na počítači)</h2>
+          <ol class="steps">
+            <li>
+              <h3>Otevřete aplikaci a záložku Štítky</h3>
+              <p>Na počítači otevřete <strong>inventura-majetku.github.io</strong> → záložka <strong>Štítky</strong>.</p>
+            </li>
+            <li>
+              <h3>Nahrajte seznam majetku</h3>
+              <p>Soubor .xlsx přetáhněte myší do rámečku, nebo na rámeček klikněte a soubor vyberte.</p>
+            </li>
+            <li>
+              <h3>Vyberte, co tisknout</h3>
+              <p>Všechno je zaškrtnuté. Chcete jen některé štítky? Klikněte na <strong>Zrušit výběr</strong> a zaškrtněte jen ty, které potřebujete (pomůže políčko <em>Hledat</em>).</p>
+            </li>
+            <li>
+              <h3>Vyberte typ archu</h3>
+              <p>V části <strong>Arch etiket a tisk</strong> vyberte rozměr podle balení etiket (např. 48,5 × 25,4 mm, 40 ks na A4).</p>
+              <p>Arch už je načatý? Do <strong>Začít od etikety č.</strong> napište první volnou etiketu (počítá se zleva doprava, shora dolů).</p>
+            </li>
+            <li>
+              <h3>Vytvořte PDF a vytiskněte</h3>
+              <p>Klikněte na <strong>Vytvořit PDF</strong> – soubor se stáhne. Otevřete ho a vytiskněte.</p>
+              <p class="tip"><strong>Důležité:</strong> v okně tisku nastavte velikost <strong>Skutečná velikost / 100 %</strong>, ne „Přizpůsobit“. Jinak štítky nesednou na etikety.<br />
+                Nový balík etiket nejdřív vyzkoušejte na <strong>obyčejný papír</strong> se zapnutými rámečky a přiložte ho proti světlu k archu etiket.</p>
+            </li>
+            <li>
+              <h3>Nalepte štítky</h3>
+              <p>Lepte na <strong>čistý a suchý</strong> povrch, na místo, které je <strong>dobře vidět</strong> a kam se dá pohodlně namířit telefonem. Nelepte na místa, která se často otírají nebo myjí. U stejných věcí (monitory, židle…) lepte pokaždé na stejné místo – při inventuře je najdete rychleji.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
     </main>
+
+    <dialog id="note-dialog" class="note-dialog">
+      <form method="dialog">
+        <h2>Poznámka</h2>
+        <p class="muted small" id="note-title"></p>
+        <div class="chips" id="note-presets"></div>
+        <label>Vlastní text
+          <input type="text" id="note-text" maxlength="200" placeholder="např. odvezeno na opravu 10. 11." />
+        </label>
+        <div class="dialog-actions">
+          <button type="submit" value="delete" class="link danger-link">Smazat</button>
+          <span class="grow"></span>
+          <button type="submit" value="cancel" class="secondary" formnovalidate>Zrušit</button>
+          <button type="submit" value="save" class="primary">Uložit</button>
+        </div>
+      </form>
+    </dialog>
 
     <div class="update-banner" id="update-banner" role="status" hidden>
       <span>Je k dispozici nová verze aplikace.</span>

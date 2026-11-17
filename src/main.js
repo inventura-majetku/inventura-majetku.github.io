@@ -25,6 +25,13 @@ function showTab(name) {
 document.querySelectorAll('.tab').forEach((btn) => {
   btn.addEventListener('click', () => showTab(btn.dataset.tab));
 });
+document.querySelectorAll('[data-goto]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    showTab(btn.dataset.goto);
+    window.scrollTo(0, 0);
+  });
+});
+document.getElementById('help-print').addEventListener('click', () => window.print());
 
 initInventory();
 {

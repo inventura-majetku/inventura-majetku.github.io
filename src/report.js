@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import regularUrl from './fonts/NotoSans-Regular.ttf?url';
 import boldUrl from './fonts/NotoSans-Bold.ttf?url';
-import { stats, fmtDateTime } from './inventory.js';
+import { stats, fmtDateTime, getNote } from './inventory.js';
 
 let fontCache = null;
 
@@ -100,6 +100,9 @@ export async function buildReportPdf(session) {
     doc.setFontSize(12);
     doc.setTextColor(...color);
     doc.text(`${title} (${count})`, M, y);
+    // Sloupec Poznámka (poslední) dostane pevnou šířku, aby nezužoval názvy.
+    const last = head.length - 1;
+    const extraCols = head[last] === 'Poznámka' ? { [last]: { cellWidth: 45 } } : {};
     autoTable(doc, {
       startY: y + 2,
       head: [head],
@@ -108,14 +111,20 @@ export async function buildReportPdf(session) {
       styles: { font: 'Noto', fontSize: 9, cellPadding: 1.6, textColor: DARK, overflow: 'linebreak' },
       headStyles: { font: 'Noto', fontStyle: 'bold', fillColor: color, textColor: 255 },
       alternateRowStyles: { fillColor: [246, 242, 234] },
-      columnStyles: { 0: { cellWidth: 30, fontStyle: 'bold' } },
+      columnStyles: { 0: { cellWidth: 30, fontStyle: 'bold' }, ...extraCols },
       margin: { left: M, right: M },
     });
     y = doc.lastAutoTable.finalY + 10;
   };
 
   const missing = session.items.filter((it) => !session.found[it.inv]);
-  section('Chybí', missing.length, ['Inventární číslo', 'Název'], missing.map((it) => [it.inv, it.name]), [180, 35, 24]);
+  section(
+    'Chybí',
+    missing.length,
+    ['Inventární číslo', 'Název', 'Poznámka'],
+    missing.map((it) => [it.inv, it.name, getNote(session, it.inv)]),
+    [180, 35, 24]
+  );
 
   section(
     'Mimo seznam',
@@ -131,8 +140,13 @@ export async function buildReportPdf(session) {
   section(
     'Nalezeno',
     found.length,
-    ['Inventární číslo', 'Název', 'Čas', 'Způsob'],
-    found.map((it) => [it.inv, it.name, fmtDateTime(session.found[it.inv].at), session.found[it.inv].manual ? 'ručně' : 'sken']),
+    ['Inventární číslo', 'Název', 'Čas / způsob', 'Poznámka'],
+    found.map((it) => [
+      it.inv,
+      it.name,
+      `${fmtDateTime(session.found[it.inv].at)}\n${session.found[it.inv].manual ? 'ručně' : 'sken'}`,
+      getNote(session, it.inv),
+    ]),
     [21, 122, 60]
   );
 

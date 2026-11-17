@@ -10,6 +10,9 @@ import {
   loadSession,
   exportResult,
   fmtDateTime,
+  NOTE_PRESETS,
+  getNote,
+  setNote,
 } from './inventory.js';
 
 const $ = (id) => document.getElementById(id);
@@ -71,6 +74,14 @@ export function initInventory() {
 
   // ---------- Kamera ----------
   $('cam-toggle').addEventListener('click', () => (cameraOn ? stopCamera() : startCamera()));
+  $('cam-torch').addEventListener('click', async () => {
+    try {
+      await scanner?.toggleFlash();
+    } catch {
+      setScanMsg('Svítilnu se nepodařilo zapnout.', 'warn');
+    }
+    updateTorchButton();
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopCamera();
   });
@@ -255,6 +266,14 @@ async function startCamera() {
     await scanner.start();
     cameraOn = true;
     $('cam-toggle').textContent = 'Zastavit kameru';
+    // Svítilna: jen když ji telefon v prohlížeči podporuje (Android ano, iPhone zatím ne).
+    scanner
+      .hasFlash()
+      .then((has) => {
+        $('cam-torch').hidden = !has || !cameraOn;
+        updateTorchButton();
+      })
+      .catch(() => ($('cam-torch').hidden = true));
     setScanMsg('Namiřte kameru na QR kód štítku.', 'muted');
     try {
       wakeLock = await navigator.wakeLock?.request('screen');
@@ -280,12 +299,22 @@ async function startCamera() {
 
 function stopCamera() {
   if (!cameraOn) return;
+  if (scanner?.isFlashOn()) scanner.turnFlashOff().catch(() => {});
   scanner?.stop();
+  $('cam-torch').hidden = true;
   cameraOn = false;
   $('video-wrap').hidden = true;
   $('cam-toggle').textContent = 'Spustit kameru';
   wakeLock?.release?.().catch(() => {});
   wakeLock = null;
+}
+
+function updateTorchButton() {
+  const on = !!scanner?.isFlashOn();
+  const b = $('cam-torch');
+  b.textContent = on ? '🔦 Zhasnout' : '🔦 Svítilna';
+  b.setAttribute('aria-pressed', String(on));
+  b.classList.toggle('on', on);
 }
 
 // ---------- Vykreslení ----------
@@ -313,36 +342,48 @@ function renderList() {
   ul.innerHTML = '';
   const frag = document.createDocumentFragment();
 
-  const row = (cls, code, text, sub, btnLabel, onClick) => {
+  // buttons: [[popisek, funkce, třída?], …]
+  const row = (cls, code, text, sub, note, buttons) => {
     const li = document.createElement('li');
     li.className = cls;
     const main = document.createElement('div');
     main.className = 'li-main';
-    const c = document.createElement('span');
-    c.className = 'code';
-    c.textContent = code;
-    const t = document.createElement('span');
-    t.className = 'name';
-    t.textContent = text;
-    main.append(c, t);
-    if (sub) {
+    const add = (className, content) => {
       const s = document.createElement('span');
-      s.className = 'sub muted small';
-      s.textContent = sub;
+      s.className = className;
+      s.textContent = content;
       main.appendChild(s);
+    };
+    add('code', code);
+    add('name', text);
+    if (sub) add('sub muted small', sub);
+    if (note) add('note small', `📝 ${note}`);
+    const btns = document.createElement('div');
+    btns.className = 'li-btns';
+    for (const [label, onClick, extra] of buttons) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `secondary small-btn ${extra || ''}`;
+      b.textContent = label;
+      b.addEventListener('click', onClick);
+      btns.appendChild(b);
     }
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'secondary small-btn';
-    b.textContent = btnLabel;
-    b.addEventListener('click', onClick);
-    li.append(main, b);
+    li.append(main, btns);
     frag.appendChild(li);
   };
 
+  const noteBtn = (it, kind) => [
+    getNote(session, it.inv) ? 'Upravit pozn.' : 'Poznámka',
+    () => openNoteDialog(it, kind),
+    'quiet',
+  ];
+
   if (view === 'missing') {
     for (const it of session.items.filter((i) => !session.found[i.inv])) {
-      row('missing', it.inv, it.name, '', 'Nalezeno ručně', () => handleCode(it.inv, true));
+      row('missing', it.inv, it.name, '', getNote(session, it.inv), [
+        ['Nalezeno ručně', () => handleCode(it.inv, true)],
+        noteBtn(it, 'missing'),
+      ]);
     }
   } else if (view === 'found') {
     const list = session.items
@@ -350,17 +391,30 @@ function renderList() {
       .sort((a, b) => session.found[b.inv].at.localeCompare(session.found[a.inv].at));
     for (const it of list) {
       const f = session.found[it.inv];
-      row('found', it.inv, it.name, `${fmtDateTime(f.at)} · ${f.manual ? 'ručně' : 'sken'}`, 'Vrátit', () => {
-        unmark(session, it.inv);
-        touch();
-      });
+      row('found', it.inv, it.name, `${fmtDateTime(f.at)} · ${f.manual ? 'ručně' : 'sken'}`, getNote(session, it.inv), [
+        noteBtn(it, 'found'),
+        [
+          'Vrátit',
+          () => {
+            unmark(session, it.inv);
+            touch();
+          },
+          'quiet',
+        ],
+      ]);
     }
   } else {
     for (const e of [...session.extras].reverse()) {
-      row('extra', e.code, e.note, fmtDateTime(e.at), 'Odebrat', () => {
-        removeExtra(session, e.code);
-        touch();
-      });
+      row('extra', e.code, e.note, fmtDateTime(e.at), '', [
+        [
+          'Odebrat',
+          () => {
+            removeExtra(session, e.code);
+            touch();
+          },
+          'quiet',
+        ],
+      ]);
     }
   }
 
@@ -376,6 +430,44 @@ function renderList() {
     frag.appendChild(li);
   }
   ul.appendChild(frag);
+}
+
+// ---------- Poznámka k položce ----------
+function openNoteDialog(item, kind) {
+  const dlg = $('note-dialog');
+  const input = $('note-text');
+  $('note-title').textContent = `${item.inv} – ${item.name}`;
+  input.value = getNote(session, item.inv);
+
+  const presets = $('note-presets');
+  presets.innerHTML = '';
+  for (const p of NOTE_PRESETS[kind]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.textContent = p;
+    b.addEventListener('click', () => {
+      input.value = p;
+      input.focus();
+    });
+    presets.appendChild(b);
+  }
+
+  dlg.onclose = () => {
+    if (dlg.returnValue === 'save') setNote(session, item.inv, input.value);
+    else if (dlg.returnValue === 'delete') setNote(session, item.inv, '');
+    else return;
+    touch();
+  };
+  // Enter v textu = Uložit (jinak by formulář použil první tlačítko „Smazat“)
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      dlg.close('save');
+    }
+  };
+  dlg.returnValue = '';
+  dlg.showModal();
 }
 
 function touch() {

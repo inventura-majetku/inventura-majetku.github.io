@@ -60,6 +60,23 @@ export function removeExtra(session, code) {
   session.extras = session.extras.filter((e) => e.code !== code);
 }
 
+// ---------- Poznámky k položkám ----------
+export const NOTE_PRESETS = {
+  missing: ['Na opravě', 'Zapůjčeno', 'Přesunuto na jiné pracoviště', 'Vyřazeno / zlikvidováno', 'Nelze dohledat'],
+  found: ['Poškozený štítek – vyměnit', 'Poškozeno', 'Nepoužívá se', 'Jiné umístění'],
+};
+
+export function getNote(session, inv) {
+  return session.notes?.[inv] || '';
+}
+
+export function setNote(session, inv, text) {
+  session.notes ??= {};
+  const t = String(text ?? '').trim();
+  if (t) session.notes[inv] = t;
+  else delete session.notes[inv];
+}
+
 export function stats(session) {
   const total = session.items.length;
   const found = session.items.filter((it) => session.found[it.inv]).length;
@@ -129,7 +146,10 @@ export function exportResult(session) {
   const missing = session.items.filter((it) => !session.found[it.inv]);
   XLSX.utils.book_append_sheet(
     wb,
-    sheet([['Inventární číslo', 'Název'], ...missing.map((it) => [it.inv, it.name])], [18, 60]),
+    sheet(
+      [['Inventární číslo', 'Název', 'Poznámka'], ...missing.map((it) => [it.inv, it.name, getNote(session, it.inv)])],
+      [18, 60, 40]
+    ),
     'Chybí'
   );
 
@@ -140,15 +160,16 @@ export function exportResult(session) {
     wb,
     sheet(
       [
-        ['Inventární číslo', 'Název', 'Čas', 'Způsob'],
+        ['Inventární číslo', 'Název', 'Čas', 'Způsob', 'Poznámka'],
         ...found.map((it) => [
           it.inv,
           it.name,
           fmtDateTime(session.found[it.inv].at),
           session.found[it.inv].manual ? 'ručně' : 'sken',
+          getNote(session, it.inv),
         ]),
       ],
-      [18, 60, 18, 10]
+      [18, 60, 18, 10, 40]
     ),
     'Nalezeno'
   );
