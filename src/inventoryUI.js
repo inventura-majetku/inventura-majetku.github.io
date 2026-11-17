@@ -98,17 +98,20 @@ export function initInventory() {
   );
 
   // ---------- Export ----------
-  const canShareFiles = (() => {
+  // Zkouška se skutečným typem souboru: Chrome na Androidu nepovoluje sdílet Excel, PDF ano.
+  const canShare = (name, type) => {
     try {
-      // Zkouška se skutečným typem souboru: Chrome na Androidu sdílení Excelu nepovoluje.
-      return !!navigator.canShare?.({ files: [new File(['x'], 'test.xlsx', { type: XLSX_MIME })] });
+      return !!navigator.canShare?.({ files: [new File(['x'], name, { type })] });
     } catch {
       return false;
     }
-  })();
-  $('inv-share').hidden = !canShareFiles;
-  $('inv-export').addEventListener('click', () => doExport(false));
-  $('inv-share').addEventListener('click', () => doExport(true));
+  };
+  $('inv-share').hidden = !canShare('test.xlsx', XLSX_MIME);
+  $('inv-share-pdf').hidden = !canShare('test.pdf', 'application/pdf');
+  $('inv-export').addEventListener('click', () => doExport('xlsx', false));
+  $('inv-share').addEventListener('click', () => doExport('xlsx', true));
+  $('inv-export-pdf').addEventListener('click', () => doExport('pdf', false));
+  $('inv-share-pdf').addEventListener('click', () => doExport('pdf', true));
 
   $('inv-end').addEventListener('click', () => {
     const notSaved = !session.exportedAt || session.exportedAt < session.changedAt;
@@ -290,6 +293,7 @@ function render() {
   $('inv-start').hidden = !!session;
   $('inv-run').hidden = !session;
   if (!session) return;
+  loadReport().catch(() => (reportModule = null));
 
   const s = stats(session);
   $('inv-title').textContent = session.centerLabel;
@@ -382,10 +386,23 @@ function touch() {
 }
 
 // ---------- Export ----------
-async function doExport(share) {
+// Modul s PDF protokolem a písmem načteme dopředu, aby sdílení proběhlo hned po kliknutí
+// (prohlížeč dovolí sdílet jen krátce po stisku tlačítka).
+let reportModule = null;
+function loadReport() {
+  reportModule ??= import('./report.js').then(async (m) => {
+    await m.preloadReport();
+    return m;
+  });
+  return reportModule;
+}
+
+async function doExport(kind, share) {
   const msg = $('inv-export-msg');
+  const label = kind === 'pdf' ? 'PDF' : 'Excel';
   try {
-    const { blob, fileName } = exportResult(session);
+    const { blob, fileName } =
+      kind === 'pdf' ? await (await loadReport()).buildReportPdf(session) : exportResult(session);
     session.exportedAt = new Date().toISOString();
     persist();
 
@@ -399,17 +416,16 @@ async function doExport(share) {
       } catch (err) {
         if (err?.name === 'AbortError') return; // uživatel sdílení zavřel
         // Sdílení nepovoleno → soubor aspoň uložíme.
-        $('inv-share').hidden = true;
         download(blob, fileName);
         msg.className = 'warn';
-        msg.textContent = `Tento telefon nedovolí sdílet Excel přímo. Soubor ${fileName} je uložený ve Stažených souborech – přiložte ho do e-mailu jako přílohu.`;
+        msg.textContent = `Sdílení se nepodařilo (${label}). Soubor ${fileName} je uložený ve Stažených souborech – pošlete ho jako přílohu.`;
         return;
       }
     }
 
     download(blob, fileName);
     msg.className = 'ok';
-    msg.textContent = `Uloženo do Stažených souborů: ${fileName}. Sekretářce ho pošlete jako přílohu e-mailu.`;
+    msg.textContent = `Uloženo do Stažených souborů: ${fileName}.`;
   } catch (err) {
     console.error(err);
     msg.className = 'err';

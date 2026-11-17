@@ -1,6 +1,9 @@
 import { parseWorkbook, listCenters } from './data.js';
 import { buildLabelsPdf, DEFAULT_LAYOUT, PRESETS, perSheet } from './labels.js';
 import { initInventory, hasSession } from './inventoryUI.js';
+import { initPwa } from './pwa.js';
+
+initPwa();
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'majetek.layout.v1';

@@ -15,7 +15,7 @@
   </head>
   <body>
     <header class="topbar">
-      <h1 class="brand"><img src="./icon-96x96.png" alt="" width="32" height="32" />Evidence majetku</h1>
+      <h1 class="brand"><img src="./icon-96x96.png" alt="" width="32" height="32" />Evidence majetku<span class="badge" id="offline-badge" hidden>offline</span></h1>
       <nav class="tabs">
         <button class="tab active" data-tab="labels">Štítky</button>
         <button class="tab" data-tab="inventory">Inventura</button>
@@ -170,10 +170,14 @@
 
           <div class="card">
             <h2>Dokončení</h2>
-            <p class="muted small">Výsledek se uloží jako Excel se seznamem nalezených a chybějících položek. Rozpracovaná inventura se průběžně ukládá v tomto zařízení.</p>
+            <p class="muted small">Výsledek uložte jako Excel (pro zpracování) nebo PDF protokol (pro odeslání a tisk). Rozpracovaná inventura se průběžně ukládá v tomto zařízení.</p>
             <div class="actions row">
-              <button type="button" class="primary" id="inv-export">Uložit výsledek (Excel)</button>
-              <button type="button" class="secondary" id="inv-share" hidden>Sdílet / odeslat</button>
+              <button type="button" class="primary" id="inv-share-pdf" hidden>Sdílet PDF (WhatsApp, e-mail…)</button>
+              <button type="button" class="secondary" id="inv-share" hidden>Sdílet Excel</button>
+            </div>
+            <div class="actions row">
+              <button type="button" class="secondary" id="inv-export">Uložit Excel</button>
+              <button type="button" class="secondary" id="inv-export-pdf">Uložit PDF</button>
             </div>
             <div id="inv-export-msg"></div>
             <div class="actions">
@@ -183,6 +187,13 @@
         </div>
       </section>
     </main>
+
+    <div class="update-banner" id="update-banner" role="status" hidden>
+      <span>Je k dispozici nová verze aplikace.</span>
+      <button type="button" class="primary" id="update-now">Aktualizovat</button>
+      <button type="button" class="link" id="update-later">Později</button>
+    </div>
+    <div class="toast" id="toast" role="status" hidden></div>
 
     <script type="module" src="./src/main.js"></script>
   </body>

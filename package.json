@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "vite": "^8.3.8"
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0",
+    "workbox-window": "^7.4.1"
   }
 }

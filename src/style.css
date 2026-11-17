@@ -56,6 +56,35 @@ body {
 .topbar h1 { font-size: 18px; margin: 0; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand img { border-radius: 8px; display: block; }
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.update-banner, .toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  z-index: 50;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  padding: 12px 14px;
+}
+.update-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.update-banner span { flex: 1 1 200px; font-weight: 600; }
+.update-banner .primary { padding: 8px 14px; }
+[hidden] { display: none !important; }
 .tabs { display: flex; gap: 4px; }
 .tab {
   border: 1px solid var(--line);
@@ -170,6 +199,7 @@ button.danger {
 }
 button:disabled { opacity: 0.5; cursor: default; }
 .actions.row { margin: 12px 0 0; }
+.actions.row:has(> :not([hidden])) ~ .actions.row { margin-top: 8px; }
 
 .inv-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .inv-head h2 { margin: 0; }
