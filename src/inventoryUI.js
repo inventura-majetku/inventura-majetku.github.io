@@ -76,11 +76,10 @@ export function initInventory() {
   $('cam-toggle').addEventListener('click', () => (cameraOn ? stopCamera() : startCamera()));
   $('cam-torch').addEventListener('click', async () => {
     try {
-      await scanner?.toggleFlash();
+      await setTorch(!torchOn);
     } catch {
       setScanMsg('Svítilnu se nepodařilo zapnout.', 'warn');
     }
-    updateTorchButton();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopCamera();
@@ -253,9 +252,11 @@ async function startCamera() {
   setScanMsg('Spouštím kameru…', 'muted');
   try {
     const { default: QrScanner } = await import('qr-scanner');
+    QrScannerClass = QrScanner;
     if (!scanner) {
+      const saved = loadCameraPref();
       scanner = new QrScanner($('video'), (res) => handleCode(res.data, false), {
-        preferredCamera: 'environment',
+        preferredCamera: saved?.id || 'environment',
         highlightScanRegion: true,
         highlightCodeOutline: true,
         maxScansPerSecond: 8,
@@ -266,15 +267,15 @@ async function startCamera() {
     await scanner.start();
     cameraOn = true;
     $('cam-toggle').textContent = 'Zastavit kameru';
+    setScanMsg('Namiřte kameru na QR kód štítku.', 'muted');
     // Svítilna: jen když ji telefon v prohlížeči podporuje (Android ano, iPhone zatím ne).
-    scanner
-      .hasFlash()
+    torchOn = false;
+    updateTorchButton();
+    findTorchCamera()
       .then((has) => {
         $('cam-torch').hidden = !has || !cameraOn;
-        updateTorchButton();
       })
       .catch(() => ($('cam-torch').hidden = true));
-    setScanMsg('Namiřte kameru na QR kód štítku.', 'muted');
     try {
       wakeLock = await navigator.wakeLock?.request('screen');
     } catch {
@@ -299,7 +300,7 @@ async function startCamera() {
 
 function stopCamera() {
   if (!cameraOn) return;
-  if (scanner?.isFlashOn()) scanner.turnFlashOff().catch(() => {});
+  if (torchOn) setTorch(false).catch(() => {});
   scanner?.stop();
   $('cam-torch').hidden = true;
   cameraOn = false;
@@ -309,8 +310,108 @@ function stopCamera() {
   wakeLock = null;
 }
 
+// ---------- Svítilna a výběr fotoaparátu ----------
+// Telefony s více zadními fotoaparáty (např. Samsung S23) často pro web vyberou
+// širokoúhlý objektiv, který svítilnu neovládá a hůř ostří na blízko.
+// Proto při prvním spuštění vyzkoušíme zadní fotoaparáty, najdeme ten se svítilnou
+// a zapamatujeme si ho pro příště.
+const CAMERA_KEY = 'majetek.camera.v1';
+let QrScannerClass = null;
+let torchOn = false;
+
+function loadCameraPref() {
+  try {
+    return JSON.parse(localStorage.getItem(CAMERA_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function saveCameraPref(pref) {
+  try {
+    localStorage.setItem(CAMERA_KEY, JSON.stringify(pref));
+  } catch {
+    /* nevadí */
+  }
+}
+
+function currentTrack() {
+  const s = $('video').srcObject;
+  return s instanceof MediaStream ? s.getVideoTracks()[0] : null;
+}
+
+function trackHasTorch(track) {
+  try {
+    const caps = track?.getCapabilities?.() || {};
+    return !!caps.torch || 'torch' in (track?.getSettings?.() || {});
+  } catch {
+    return false;
+  }
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Zajistí, aby běžel fotoaparát se svítilnou (pokud nějaký je). Vrací true/false. */
+async function findTorchCamera() {
+  await wait(300); // stream se musí rozběhnout
+  const track = currentTrack();
+  if (trackHasTorch(track)) {
+    saveCameraPref({ id: track.getSettings().deviceId || null, torch: true });
+    return true;
+  }
+  const pref = loadCameraPref();
+  // Už jsme dřív zjistili, že žádný nemá (např. iPhone) → 30 dní znovu nezkoušíme.
+  if (pref && pref.torch === false && Date.now() - (pref.at || 0) < 30 * 864e5) return false;
+
+  let cams = [];
+  try {
+    cams = await QrScannerClass.listCameras(true);
+  } catch {
+    return false;
+  }
+  const currentId = track?.getSettings?.().deviceId;
+  // Hlavní zadní fotoaparát zkusíme jako první (Samsung „camera2 0“, iPhone „Back Camera“).
+  const score = (c) =>
+    (/camera2 0\b/.test(c.label) ? 10 : 0) +
+    (/back|rear|zadní|environment/i.test(c.label) ? 5 : 0) -
+    (/ultra|wide|tele|dual|triple|front|přední/i.test(c.label) ? 4 : 0);
+  const candidates = cams
+    .filter((c) => c.id !== currentId && !/front|přední|user/i.test(c.label))
+    .sort((a, b) => score(b) - score(a));
+
+  for (const cam of candidates) {
+    if (!cameraOn) return false;
+    try {
+      await scanner.setCamera(cam.id);
+      await wait(400);
+      if (trackHasTorch(currentTrack())) {
+        saveCameraPref({ id: cam.id, torch: true });
+        return true;
+      }
+    } catch {
+      /* zkusíme další */
+    }
+  }
+  // Žádný fotoaparát svítilnu nemá → vrátíme původní a příště už nezkoušíme.
+  try {
+    if (currentId && cameraOn) await scanner.setCamera(currentId);
+  } catch {
+    /* nevadí */
+  }
+  saveCameraPref({ id: currentId || null, torch: false, at: Date.now() });
+  return false;
+}
+
+async function setTorch(on) {
+  const track = currentTrack();
+  if (!track) return;
+  await track.applyConstraints({ advanced: [{ torch: on }] });
+  torchOn = on;
+  updateTorchButton();
+}
+
 function updateTorchButton() {
-  const on = !!scanner?.isFlashOn();
+  const on = torchOn;
   const b = $('cam-torch');
   b.textContent = on ? '🔦 Zhasnout' : '🔦 Svítilna';
   b.setAttribute('aria-pressed', String(on));
