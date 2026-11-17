@@ -6,3 +6,6 @@ dist/
 *.xls
 *.csv
 *.pdf
+
+# Balík ikon (zdrojová předloha je v design/, použité ikony v public/)
+ikona/

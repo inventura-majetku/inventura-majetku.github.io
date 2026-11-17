@@ -1,10 +1,10 @@
 :root {
-  --bg: #f4f5f7;
+  --bg: #f6f2ea;
   --card: #ffffff;
-  --text: #1d2330;
-  --muted: #667085;
-  --line: #dde1e7;
-  --accent: #1f6feb;
+  --text: #2b2721;
+  --muted: #6e665b;
+  --line: #e4ddd1;
+  --accent: #b4561b;
   --accent-text: #ffffff;
   --ok: #157a3c;
   --ok-bg: #e7f6ec;
@@ -16,12 +16,13 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14171c;
-    --card: #1d2128;
-    --text: #e6e8eb;
-    --muted: #9aa3af;
-    --line: #2f3540;
-    --accent: #4c8dff;
+    --bg: #171512;
+    --card: #221f1b;
+    --text: #ece7df;
+    --muted: #a59c8f;
+    --line: #38332c;
+    --accent: #e8894a;
+    --accent-text: #1d1208;
     --ok: #6fdc95;
     --ok-bg: #16301f;
     --warn: #f5c451;
@@ -53,6 +54,8 @@ body {
   z-index: 10;
 }
 .topbar h1 { font-size: 18px; margin: 0; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { border-radius: 8px; display: block; }
 .tabs { display: flex; gap: 4px; }
 .tab {
   border: 1px solid var(--line);

@@ -13,6 +13,7 @@ import {
 } from './inventory.js';
 
 const $ = (id) => document.getElementById(id);
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 let session = loadSession();
 let pendingFile = null; // { items, fileName } před výběrem pracoviště
@@ -22,7 +23,6 @@ let cameraOn = false;
 let wakeLock = null;
 let audioCtx = null;
 let lastScan = { code: '', time: 0 };
-let lastExport = null; // { blob, fileName }
 
 export function hasSession() {
   return !!session;
@@ -100,7 +100,8 @@ export function initInventory() {
   // ---------- Export ----------
   const canShareFiles = (() => {
     try {
-      return !!navigator.canShare?.({ files: [new File(['x'], 'x.xlsx')] });
+      // Zkouška se skutečným typem souboru: Chrome na Androidu sdílení Excelu nepovoluje.
+      return !!navigator.canShare?.({ files: [new File(['x'], 'test.xlsx', { type: XLSX_MIME })] });
     } catch {
       return false;
     }
@@ -117,7 +118,6 @@ export function initInventory() {
     if (!confirm(q)) return;
     stopCamera();
     session = null;
-    lastExport = null;
     saveSession(null);
     $('inv-file-label').textContent = 'Vybrat soubor';
     $('inv-load-msg').textContent = '';
@@ -388,7 +388,6 @@ async function doExport(share) {
     const { blob, fileName } = exportResult(session);
     session.exportedAt = new Date().toISOString();
     persist();
-    lastExport = { blob, fileName };
 
     if (share) {
       const file = new File([blob], fileName, { type: blob.type });
@@ -396,25 +395,35 @@ async function doExport(share) {
         await navigator.share({ files: [file], title: fileName });
         msg.className = 'ok';
         msg.textContent = `Odesláno: ${fileName}`;
+        return;
       } catch (err) {
-        if (err?.name !== 'AbortError') throw err;
+        if (err?.name === 'AbortError') return; // uživatel sdílení zavřel
+        // Sdílení nepovoleno → soubor aspoň uložíme.
+        $('inv-share').hidden = true;
+        download(blob, fileName);
+        msg.className = 'warn';
+        msg.textContent = `Tento telefon nedovolí sdílet Excel přímo. Soubor ${fileName} je uložený ve Stažených souborech – přiložte ho do e-mailu jako přílohu.`;
+        return;
       }
-      return;
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    download(blob, fileName);
     msg.className = 'ok';
-    msg.textContent = `Uloženo do Stažených souborů: ${fileName}`;
+    msg.textContent = `Uloženo do Stažených souborů: ${fileName}. Sekretářce ho pošlete jako přílohu e-mailu.`;
   } catch (err) {
     console.error(err);
     msg.className = 'err';
     msg.textContent = 'Výsledek se nepodařilo uložit: ' + (err?.message || err);
   }
+}
+
+function download(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
