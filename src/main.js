@@ -1,18 +1,40 @@
 import { parseWorkbook, listCenters } from './data.js';
 import { buildLabelsPdf, DEFAULT_LAYOUT, PRESETS, perSheet } from './labels.js';
+import { initInventory, hasSession } from './inventoryUI.js';
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'majetek.layout.v1';
 
 // ---------- Záložky ----------
-document.querySelectorAll('.tab').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b === btn));
-    document.querySelectorAll('.tab-panel').forEach((p) => {
-      p.hidden = p.id !== `tab-${btn.dataset.tab}`;
-    });
+const TAB_KEY = 'majetek.tab';
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach((p) => {
+    p.hidden = p.id !== `tab-${name}`;
   });
+  document.dispatchEvent(new CustomEvent('tabchange', { detail: name }));
+  try {
+    localStorage.setItem(TAB_KEY, name);
+  } catch {
+    /* nevadí */
+  }
+}
+document.querySelectorAll('.tab').forEach((btn) => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
 });
+
+initInventory();
+{
+  let saved = null;
+  try {
+    saved = localStorage.getItem(TAB_KEY);
+  } catch {
+    /* nevadí */
+  }
+  // Rozpracovaná inventura nebo telefon → rovnou Inventura.
+  const isPhone = window.matchMedia('(pointer: coarse) and (max-width: 820px)').matches;
+  showTab(hasSession() ? 'inventory' : saved || (isPhone ? 'inventory' : 'labels'));
+}
 
 // ---------- Stav ----------
 let allItems = [];

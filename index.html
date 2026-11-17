@@ -104,9 +104,75 @@
 
       <!-- ============ INVENTURA ============ -->
       <section id="tab-inventory" class="tab-panel" hidden>
-        <div class="card">
-          <h2>Inventura</h2>
-          <p class="muted">Skenování štítků telefonem – připravujeme.</p>
+        <!-- Začátek nové inventury -->
+        <div class="card" id="inv-start">
+          <h2>Nová inventura</h2>
+          <p class="muted">Nahrajte export majetku (.xlsx) pro pracoviště, které budete kontrolovat. Soubor se zpracuje jen v tomto zařízení.</p>
+          <label class="file-drop">
+            <input type="file" id="inv-file" accept=".xlsx,.xls" />
+            <span id="inv-file-label">Vybrat soubor</span>
+          </label>
+          <div id="inv-load-msg"></div>
+          <div id="inv-center-box" hidden>
+            <label>Pracoviště
+              <select id="inv-center"></select>
+            </label>
+            <div class="actions">
+              <button type="button" class="primary" id="inv-begin">Začít inventuru</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Probíhající inventura -->
+        <div id="inv-run" hidden>
+          <div class="card">
+            <div class="inv-head">
+              <div>
+                <h2 id="inv-title"></h2>
+                <div class="muted small" id="inv-sub"></div>
+              </div>
+              <div class="inv-count"><strong id="inv-found">0</strong> / <span id="inv-total">0</span></div>
+            </div>
+            <div class="progress"><div id="inv-bar"></div></div>
+          </div>
+
+          <div class="card scan-card">
+            <div class="video-wrap" id="video-wrap" hidden>
+              <video id="video" playsinline muted></video>
+            </div>
+            <div id="scan-msg" class="scan-msg muted">Spusťte kameru a namiřte ji na QR kód štítku.</div>
+            <div class="actions row">
+              <button type="button" class="primary" id="cam-toggle">Spustit kameru</button>
+            </div>
+            <form class="manual row" id="manual-form" autocomplete="off">
+              <label class="grow">Ruční zadání (poškozený štítek)
+                <input type="text" id="manual-code" placeholder="např. MAJ2140010" autocapitalize="characters" />
+              </label>
+              <button type="submit" class="secondary">Přidat</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="chips" role="tablist">
+              <button type="button" class="chip active" data-view="missing">Chybí <span id="cnt-missing">0</span></button>
+              <button type="button" class="chip" data-view="found">Nalezeno <span id="cnt-found">0</span></button>
+              <button type="button" class="chip" data-view="extras">Mimo seznam <span id="cnt-extras">0</span></button>
+            </div>
+            <ul class="inv-list" id="inv-list"></ul>
+          </div>
+
+          <div class="card">
+            <h2>Dokončení</h2>
+            <p class="muted small">Výsledek se uloží jako Excel se seznamem nalezených a chybějících položek. Rozpracovaná inventura se průběžně ukládá v tomto zařízení.</p>
+            <div class="actions row">
+              <button type="button" class="primary" id="inv-export">Uložit výsledek (Excel)</button>
+              <button type="button" class="secondary" id="inv-share" hidden>Sdílet / odeslat</button>
+            </div>
+            <div id="inv-export-msg"></div>
+            <div class="actions">
+              <button type="button" class="danger" id="inv-end">Ukončit a začít novou inventuru</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>

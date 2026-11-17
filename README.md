@@ -3,7 +3,7 @@
 Webová aplikace pro inventuru majetku:
 
 - **Štítky** – z exportu majetku (.xlsx) vytvoří PDF se štítky (QR kód + inventární číslo) pro tisk na A4 archy samolepicích etiket.
-- **Inventura** – skenování štítků telefonem *(připravujeme)*.
+- **Inventura** – v telefonu nahrajete export pracoviště, kamerou skenujete štítky a nalezené položky se odškrtávají. Výsledek (nalezeno / chybí / mimo seznam) se uloží jako Excel. Rozpracovaná inventura se průběžně ukládá v telefonu.
 
 Data z tabulky se zpracují jen v prohlížeči a nikam se neodesílají. Tabulky s majetkem (`*.xlsx`) ani PDF se do repozitáře neukládají (viz `.gitignore`).
 
@@ -26,6 +26,8 @@ Pak otevřete http://localhost:5173.
 | `src/main.js` | ovládání stránky (nahrání souboru, výběr, tlačítka) |
 | `src/data.js` | čtení xlsx – bere jen sloupce Inventární číslo, Název, Středisko, Název střediska |
 | `src/labels.js` | tvorba PDF, předvolby archů etiket |
+| `src/inventory.js` | logika inventury, uložení stavu, export do Excelu |
+| `src/inventoryUI.js` | obrazovka Inventura (kamera, seznamy, tlačítka) |
 | `src/style.css` | styly |
 
 ## Tisk štítků
