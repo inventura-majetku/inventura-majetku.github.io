@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evidence majetku</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Evidence majetku</h1>
+      <nav class="tabs">
+        <button class="tab active" data-tab="labels">Štítky</button>
+        <button class="tab" data-tab="inventory">Inventura</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ============ ŠTÍTKY ============ -->
+      <section id="tab-labels" class="tab-panel">
+        <div class="card">
+          <h2>1. Nahrajte export majetku</h2>
+          <p class="muted">Soubor .xlsx ze systému. Zpracuje se jen v tomto prohlížeči, nikam se neodesílá.</p>
+          <label class="file-drop" id="drop">
+            <input type="file" id="file" accept=".xlsx,.xls" />
+            <span id="file-label">Vyberte soubor nebo ho sem přetáhněte</span>
+          </label>
+          <div id="load-msg"></div>
+        </div>
+
+        <div class="card" id="select-card" hidden>
+          <h2>2. Vyberte položky</h2>
+          <div class="row">
+            <label>Pracoviště
+              <select id="center"></select>
+            </label>
+            <label class="grow">Hledat
+              <input type="search" id="search" placeholder="číslo nebo název" />
+            </label>
+          </div>
+          <div class="row small">
+            <button type="button" class="link" id="sel-all">Vybrat vše</button>
+            <button type="button" class="link" id="sel-none">Zrušit výběr</button>
+            <span class="muted" id="sel-count"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th></th><th>Inventární číslo</th><th>Název</th><th>Pracoviště</th></tr></thead>
+              <tbody id="items"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" id="layout-card" hidden>
+          <h2>3. Arch etiket a tisk</h2>
+          <label>Typ archu
+            <select id="preset"></select>
+          </label>
+          <details>
+            <summary>Rozměry archu (mm)</summary>
+            <div class="grid">
+              <label>Sloupců <input type="number" data-key="cols" min="1" step="1" /></label>
+              <label>Řádků <input type="number" data-key="rows" min="1" step="1" /></label>
+              <label>Šířka etikety <input type="number" data-key="labelW" step="0.1" /></label>
+              <label>Výška etikety <input type="number" data-key="labelH" step="0.1" /></label>
+              <label>Horní okraj <input type="number" data-key="marginTop" step="0.1" /></label>
+              <label>Levý okraj <input type="number" data-key="marginLeft" step="0.1" /></label>
+              <label>Mezera vodorovně <input type="number" data-key="gapX" step="0.1" /></label>
+              <label>Mezera svisle <input type="number" data-key="gapY" step="0.1" /></label>
+              <label>Vnitřní okraj štítku <input type="number" data-key="padding" step="0.1" min="0" /></label>
+            </div>
+            <p class="muted small">Změnou rozměrů se typ archu přepne na „Vlastní“.</p>
+          </details>
+          <details>
+            <summary>Doladění tiskárny</summary>
+            <p class="muted small">Pokud tiskárna tiskne posunutě, posuňte celý tisk. Kladné číslo = doprava / dolů.</p>
+            <div class="grid">
+              <label>Posun vodorovně <input type="number" data-key="offsetX" step="0.1" /></label>
+              <label>Posun svisle <input type="number" data-key="offsetY" step="0.1" /></label>
+            </div>
+          </details>
+          <div class="grid">
+            <label>Začít od etikety č. <input type="number" data-key="startPos" min="1" step="1" /></label>
+          </div>
+          <p class="muted small">Pro načatý arch: etikety se číslují zleva doprava, shora dolů.</p>
+          <label class="check"><input type="checkbox" data-key="border" /> Tisknout rámečky (zkušební tisk na obyčejný papír)</label>
+
+          <div class="actions">
+            <button type="button" class="primary" id="generate">Vytvořit PDF</button>
+          </div>
+          <div id="gen-msg"></div>
+          <div class="tip">
+            <strong>Při tisku</strong> nastavte velikost <strong>„Skutečná velikost“ / 100 %</strong>,
+            ne „Přizpůsobit stránce“. Jinak štítky nesednou na etikety.
+            Nový typ archu nejdřív vyzkoušejte na obyčejném papíře s rámečky a přiložte ho proti světlu k archu etiket.
+          </div>
+        </div>
+
+        <div class="card" id="preview-card" hidden>
+          <h2>Náhled</h2>
+          <iframe id="preview" title="Náhled PDF"></iframe>
+        </div>
+      </section>
+
+      <!-- ============ INVENTURA ============ -->
+      <section id="tab-inventory" class="tab-panel" hidden>
+        <div class="card">
+          <h2>Inventura</h2>
+          <p class="muted">Skenování štítků telefonem – připravujeme.</p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

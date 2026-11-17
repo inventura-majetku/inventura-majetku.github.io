@@ -1,0 +1,8 @@
+node_modules/
+dist/
+
+# Data o majetku nikdy nedávat do repozitáře (veřejný GitHub)
+*.xlsx
+*.xls
+*.csv
+*.pdf
